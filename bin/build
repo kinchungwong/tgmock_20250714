@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -e
+set -x
+
+echo "====== BEGIN build ======"
+
+CURDIR=${PWD}
+PROJ_INIT=${CURDIR}/bin/project_init
+test -f "${PROJ_INIT}" && source "${PROJ_INIT}"
+
+CMAKE_OPTS=""
+CXXFLAGS=""
+# CMAKE_OPTS="--trace-expand"
+
+### For Release ###
+# CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=Release"
+# # CXXFLAGS="-std=c++17 -march=native -mtune=native -Og -g3 -ggdb -Wextra -Wpedantic"
+# CXXFLAGS="-std=c++17 -march=native -mtune=native -Og -g3 -ggdb"
+
+### For Debug ###
+CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=Debug"
+CXXFLAGS="-std=c++17 -march=native -mtune=native -Og -g3 -ggdb -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-unused-label -Wno-unused-value -Wno-unused-but-set-variable -Wno-unused-local-typedefs -Wno-unused-result -Wno-missing-field-initializers -Wno-missing-braces -Wno-missing-braces -Wno-missing-field-initializers"
+
+BUILD_DIR="${CURDIR}/build"
+BIN_DIR="${CURDIR}/bin"
+(
+    mkdir -p "${BUILD_DIR}"
+    rm -rf "${BUILD_DIR}"/*
+    cd "${BUILD_DIR}"
+    CXXFLAGS=${CXXFLAGS} cmake ${CMAKE_OPTS} -B . -S ..
+    make -j $(nproc)
+)
+
+(
+    test -f "${BUILD_DIR}/bin/tgmock_20250714" && \
+    { \
+        test -f "${BIN_DIR}/tgmock_20250714" \
+        || \
+        ln -s "${BUILD_DIR}/bin/tgmock_20250714" "${BIN_DIR}/" ; \
+    }
+)
+
+(
+    DISASM_BINARY_FILE=./build/bin/int/libtgmock_20250714_LIB.a
+    DISASM_OUTPUT_FILE=./build/disasm.s
+    objdump -d -r -C --wide --insn-width=12 -M intel "${DISASM_BINARY_FILE}" > "${DISASM_OUTPUT_FILE}"
+)
+
+echo "====== END build ======"
